@@ -1,0 +1,29 @@
+apiVersion: infrastructure.eksctl.io/v1alpha5
+kind: EKSCluster
+metadata:
+  name: wk-cluster # set the AWS cluster name here
+spec:
+  region: eu-north-1 # set the AWS region here
+  cloudWatch:
+    clusterLogging:
+      enableTypes:
+      - audit
+      - authenticator
+      - controllerManager
+  iam:
+    serviceAccounts:
+    - attachPolicyARNs:
+      # FIXME: https://github.com/weaveworks/wk-quickstart-eks/issues/56 "Default cluster-config.js creates a ServiceAccount with AWS AdministratorAccess"
+      - arn:aws:iam::aws:policy/AdministratorAccess
+      metadata:
+        name: ekscontroller
+        namespace: wkp-eks-controller
+    withOIDC: true
+  nodeGroups:
+  - desiredCapacity: 3
+    iam:
+      withAddonPolicies:
+        albIngress: true
+    instanceType: m5.large
+    name: ng-1
+  version: "1.14"

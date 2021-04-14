@@ -1,0 +1,11 @@
+version: 1
+commandUpdated:
+  generators:
+    - command: |
+        sh -c '
+          ln -sf /cluster-components
+          /jk/jk generate --stdout cluster/platform/gen-full.js \
+            --input-directory . \
+            --parameters setup/config.yaml \
+            --parameters cluster/platform/gitops-params.yaml \
+            --parameters cluster/platform/gitops-secrets.yaml'

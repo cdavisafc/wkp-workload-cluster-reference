@@ -1,0 +1,7 @@
+gitopsParams:
+  git:
+    url: git@github.com:weaveworks/wkp-core # GIT URL PLACEHOLDER
+    branch: master # GIT BRANCH PLACEHOLDER
+    path: # GIT PATH PLACEHOLDER
+  images:
+    clusterComponents: # CLUSTER COMPONENTS IMAGE PLACEHOLDER

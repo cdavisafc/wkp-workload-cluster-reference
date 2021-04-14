@@ -1,0 +1,79 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: workspace-member
+rules:
+- apiGroups:
+  - ""
+  - apps
+  - autoscaling
+  - batch
+  - bitnami.com
+  - coordination.k8s.io
+  - events.k8s.io
+  - extensions
+  - helm.fluxcd.io
+  - helm.toolkit.fluxcd.io
+  - kustomize.toolkit.fluxcd.io
+  - monitoring.coreos.com
+  - networking.k8s.io
+  - notification.toolkit.fluxcd.io
+  - source.toolkit.fluxcd.io
+  resources:
+  - configmaps
+  - endpoints
+  - events
+  - persistentvolumeclaims
+  - pods
+  - podtemplates
+  - replicationcontrollers
+  - secrets
+  - serviceaccounts
+  - services
+  - controllerrevisions
+  - daemonsets
+  - deployments
+  - replicasets
+  - statefulsets
+  - horizontalpodautoscalers
+  - cronjobs
+  - jobs
+  - sealedsecrets
+  - leases
+  - events
+  - ingresses
+  - helmreleases
+  - kustomizations
+  - namespaces
+  - alertmanagers
+  - podmonitors
+  - prometheuses
+  - prometheusrules
+  - servicemonitors
+  - thanosrulers
+  - ingresses
+  - alerts
+  - providers
+  - receivers
+  - gitrepositories
+  - helmcharts
+  - helmrepositoies
+  verbs:
+  - '*'
+- apiGroups:
+  - ""
+  resources:
+  - resourcequotas
+  - limitranges
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - networkpolicies
+  verbs:
+  - get
+  - list
+  - watch

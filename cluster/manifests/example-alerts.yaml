@@ -1,0 +1,33 @@
+#
+# Example alert definitions
+#
+
+# apiVersion: monitoring.coreos.com/v1
+# kind: PrometheusRule
+# metadata:
+#   creationTimestamp: null
+#   labels:
+#     prometheus: example
+#     role: alert-rules
+#   name: prometheus-example-rules
+# spec:
+#   groups:
+#   - name: ./example.rules
+#     rules:
+#     # This alert will always fire and is good to quickly test that things are working.
+#     - alert: ExampleAlert
+#       expr: vector(1)
+#     #
+#     # NodeHighMemoryUsage is bundled wkp-prometheus but is copied here as another example
+#     #
+#     - alert: ExampleNodeHighMemoryUsage
+#       expr: (1
+#         - max by(instance) ((node_memory_Cached_bytes + node_memory_MemFree_bytes + node_memory_Buffers_bytes)
+#         / node_memory_MemTotal_bytes)) > 0.9
+#       for: 30s
+#       labels:
+#         severity: warning
+#       annotations:
+#         containerName: prom-node-exporter
+#         impact: Risk of OOM kills, possibly resulting in loss of customer data
+#         summary: Memory usage has been over 90% for 30s

@@ -1,0 +1,201 @@
+# ---
+# apiVersion: v1
+# kind: Namespace
+# metadata:
+#   name: ingress-nginx
+# ---
+# apiVersion: helm.fluxcd.io/v1
+# kind: HelmRelease
+# metadata:
+#   name: nginx-ingress-controller
+#   namespace: ingress-nginx
+# spec:
+#   helmVersion: v3
+#   releaseName: nginx-ingress-controller
+#   chart:
+#     name: nginx-ingress-controller
+#     version: 7.4.6
+#     repository: https://charts.bitnami.com/bitnami
+#   values:
+#     service:
+#       type: NodePort
+# ---
+# apiVersion: v1
+# kind: Namespace
+# metadata:
+#   name: cert-manager
+# ---
+# apiVersion: helm.fluxcd.io/v1
+# kind: HelmRelease
+# metadata:
+#   name: cert-manager
+#   namespace: cert-manager
+# spec:
+#   releaseName: cert-manager
+#   chart:
+#     name: cert-manager
+#     version: v1.2.0
+#     repository: https://charts.jetstack.io
+#   values:
+#     installCRDs: true
+# ---
+# apiVersion: v1
+# data:
+#   secret-access-key: <base64-encoded-secret-access-key>
+# kind: Secret
+# metadata:
+#   creationTimestamp: null
+#   name: route53-credentials
+#   namespace: cert-manager
+# ---
+# apiVersion: cert-manager.io/v1
+# kind: ClusterIssuer
+# metadata:
+#   name: letsencrypt-prod
+# spec:
+#   acme:
+#     email: <your-email>
+#     server: https://acme-v02.api.letsencrypt.org/directory
+#     privateKeySecretRef:
+#       name: letsencrypt-prod-account-key
+#     solvers:
+#     - dns01:
+#         route53:
+#           region: eu-west-1
+#           accessKeyID: <access-key-with-route53-permissions>
+#           secretAccessKeySecretRef:
+#             name: route53-credentials
+#             key: secret-access-key
+# ---
+# apiVersion: v1
+# kind: Namespace
+# metadata:
+#   name: oauth2-proxy
+# ---
+# apiVersion: bitnami.com/v1alpha1
+# kind: SealedSecret
+# metadata:
+#   creationTimestamp: null
+#   name: oauth2-proxy
+#   namespace: oauth2-proxy
+# spec:
+#   encryptedData:
+#     client-id: <base64-encoded-client-id>
+#     client-secret: <base64-encoded-client-secret>
+#     cookie-secret: <base64-encoded-cookie-secret>
+#   template:
+#     metadata:
+#       creationTimestamp: null
+#       name: oauth2-proxy
+#       namespace: oauth2-proxy
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: oauth2-proxy
+#   namespace: oauth2-proxy
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: oauth2-proxy
+#   template:
+#     metadata:
+#       labels:
+#         app: oauth2-proxy
+#     spec:
+#       containers:
+#       - name: oauth2-proxy
+#         image: quay.io/oauth2-proxy/oauth2-proxy:v7.0.1
+#         imagePullPolicy: Always
+#         args:
+#         - --provider=github
+#         - --github-org=<your-github-org>
+#         - --github-team=<your-github-team>
+#         - --email-domain="*"
+#         - --upstream=file:///dev/null
+#         - --http-address=0.0.0.0:4180
+#         - --set-xauthrequest=true
+#         - --pass-access-token=true
+#         env:
+#           - name: OAUTH2_PROXY_CLIENT_ID
+#             valueFrom:
+#               secretKeyRef:
+#                 name: oauth2-proxy
+#                 key: client-id
+#           - name: OAUTH2_PROXY_CLIENT_SECRET
+#             valueFrom:
+#               secretKeyRef:
+#                 name: oauth2-proxy
+#                 key: client-secret
+#           - name: OAUTH2_PROXY_COOKIE_SECRET
+#             valueFrom:
+#               secretKeyRef:
+#                 name: oauth2-proxy
+#                 key: cookie-secret
+#         ports:
+#         - containerPort: 4180
+#           protocol: TCP
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: oauth2-proxy
+#   namespace: oauth2-proxy
+# spec:
+#   ports:
+#   - name: http
+#     port: 4180
+#     protocol: TCP
+#     targetPort: 4180
+#   selector:
+#     app: oauth2-proxy
+# ---
+# apiVersion: networking.k8s.io/v1beta1
+# kind: Ingress
+# metadata:
+#   name: oauth2-proxy
+#   namespace: oauth2-proxy
+#   annotations:
+#     kubernetes.io/ingress.class: nginx
+#     cert-manager.io/cluster-issuer: letsencrypt-prod 
+# spec:
+#   rules:
+#   - host: <hostname-to-use> # e.g. app.wkp.weave.works
+#     http:
+#       paths:
+#       - path: /oauth2
+#         backend:
+#           serviceName: oauth2-proxy
+#           servicePort: 4180
+#   tls:
+#   - hosts:
+#     - <hostname-to-use> # e.g. app.wkp.weave.works
+#     secretName: wkp-tls
+# ---
+# apiVersion: networking.k8s.io/v1beta1
+# kind: Ingress
+# metadata:
+#   annotations:
+#     kubernetes.io/ingress.class: nginx
+#     cert-manager.io/cluster-issuer: letsencrypt-prod 
+#     nginx.ingress.kubernetes.io/auth-url: "https://$host:<port-if-not-443>/oauth2/auth"
+#     nginx.ingress.kubernetes.io/auth-signin: "https://$host:<port-if-not-443>/oauth2/start?rd=$escaped_request_uri"
+#     nginx.ingress.kubernetes.io/auth-response-headers: "X-Auth-Request-User, X-Auth-Request-Email, X-Auth-Request-Access-Token"
+#   name: public-wkp-ui
+#   namespace: wkp-ui
+# spec:
+#   rules:
+#   - host: <hostname-to-use> # e.g. app.wkp.weave.works
+#     http:
+#       paths:
+#       - path: /
+#         backend:
+#           serviceName: wkp-ui-nginx-ingress-controller
+#           servicePort: 80
+#   tls:
+#   - hosts:
+#     - <hostname-to-use> # e.g. app.wkp.weave.works
+#     secretName: wkp-tls
+## You may also need to add an ingress rule to exclude the /gitops/api/agent.yaml endpoint.
+## Please refer to the MCCP usage section of the user guide for detailed instruction on how to do that.
