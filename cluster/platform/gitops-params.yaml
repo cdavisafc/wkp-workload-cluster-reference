@@ -1,7 +1,0 @@
-gitopsParams:
-  git:
-    url: git@github.com:cdavisafc/wkp-workload-cluster.git # GIT URL PLACEHOLDER
-    branch: master # GIT BRANCH PLACEHOLDER
-    path: /cluster/platform # GIT PATH PLACEHOLDER
-  images:
-    clusterComponents: docker.io/weaveworks/wkp-cluster-components:v2.5.0 # CLUSTER COMPONENTS IMAGE PLACEHOLDER
